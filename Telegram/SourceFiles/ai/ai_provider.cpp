@@ -100,8 +100,9 @@ void AppendUInt32(QByteArray &bytes, uint32 value) {
 
 QJsonObject ProviderFacade::avatarProfile() const {
 	return {
-		{ "name", "AIRI Avatar" },
-		{ "rendererType", "placeholder" },
+		{ "name", "AIRI Live2D" },
+		{ "rendererType", "live2d" },
+		{ "modelURL", "./models/live2d/hijiki.zip" },
 		{ "fallbackRendererType", "placeholder" },
 		{ "provider", kProvider },
 	};
@@ -111,9 +112,10 @@ QJsonObject ProviderFacade::capabilities(int contextMessagesLimit) const {
 	const auto config = LoadConfig();
 	return {
 		{ "avatar", QJsonObject{
-			{ "name", "AIRI Avatar" },
+			{ "name", "AIRI Live2D" },
 			{ "runtime", "telegram-avatar WebStage" },
-			{ "rendererType", "placeholder" },
+			{ "rendererType", "live2d" },
+			{ "model", "hijiki.zip" },
 		} },
 		{ "llm", QJsonObject{
 			{ "bridge", "native" },

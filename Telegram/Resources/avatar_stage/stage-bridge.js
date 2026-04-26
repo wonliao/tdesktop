@@ -143,7 +143,7 @@
     return window.StageRuntimeCore?.getStageRuntime?.(rendererType) || null;
   }
 
-  async function loadRuntime(profile) {
+  async function loadRuntime(profile, allowFallback = true) {
     const rendererType = profile?.rendererType || "placeholder";
     const RuntimeClass = await waitForRuntimeClass(rendererType);
     if (!RuntimeClass) {
@@ -157,7 +157,21 @@
     state.runtime = new RuntimeClass(root, emit);
     state.profile = profile;
     emitStatus(`Loading ${rendererType} runtime...`);
-    await state.runtime.load(profile);
+    try {
+      await state.runtime.load(profile);
+    } catch (error) {
+      const fallbackRendererType = profile?.fallbackRendererType;
+      if (allowFallback && fallbackRendererType && fallbackRendererType !== rendererType) {
+        const detail = error instanceof Error ? error.message : String(error);
+        emitStatus(`${rendererType} failed: ${detail}. Falling back to ${fallbackRendererType}...`);
+        await loadRuntime({
+          name: profile?.fallbackName || "AIRI Avatar",
+          rendererType: fallbackRendererType,
+        }, false);
+        return;
+      }
+      throw error;
+    }
     bootstrap?.markBridgeActive?.();
     hideLoadingOverlay();
     emit({
