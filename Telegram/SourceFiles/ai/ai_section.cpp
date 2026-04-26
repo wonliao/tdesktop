@@ -32,27 +32,50 @@ constexpr auto kContextMessagesLimit = 40;
 [[nodiscard]] std::string MimeFor(std::string_view id) {
 	if (id.ends_with(".html")) {
 		return "text/html; charset=utf-8";
-	} else if (id.ends_with(".js")) {
+	} else if (id.ends_with(".js")
+		|| id.ends_with(".mjs")
+		|| id.ends_with(".cjs")) {
 		return "text/javascript";
-	} else if (id.ends_with(".json")) {
+	} else if (id.ends_with(".css")) {
+		return "text/css; charset=utf-8";
+	} else if (id.ends_with(".json") || id.ends_with(".map")) {
 		return "application/json";
+	} else if (id.ends_with(".webmanifest")) {
+		return "application/manifest+json";
 	} else if (id.ends_with(".wasm")) {
 		return "application/wasm";
 	} else if (id.ends_with(".png")) {
 		return "image/png";
+	} else if (id.ends_with(".webp")) {
+		return "image/webp";
+	} else if (id.ends_with(".avif")) {
+		return "image/avif";
 	} else if (id.ends_with(".jpg") || id.ends_with(".jpeg")) {
 		return "image/jpeg";
 	} else if (id.ends_with(".svg")) {
 		return "image/svg+xml";
+	} else if (id.ends_with(".ico")) {
+		return "image/x-icon";
 	} else if (id.ends_with(".zip")) {
 		return "application/zip";
-	} else if (id.ends_with(".vrm") || id.ends_with(".vrma")) {
+	} else if (id.ends_with(".ttf")) {
+		return "font/ttf";
+	} else if (id.ends_with(".woff")) {
+		return "font/woff";
+	} else if (id.ends_with(".woff2")) {
+		return "font/woff2";
+	} else if (id.ends_with(".vrm")
+		|| id.ends_with(".vrma")
+		|| id.ends_with(".hdr")
+		|| id.ends_with(".task")) {
 		return "application/octet-stream";
+	} else if (id.ends_with(".txt") || id.ends_with(".md")) {
+		return "text/plain; charset=utf-8";
 	}
 	return {};
 }
 
-[[nodiscard]] bool SafeAvatarStageName(std::string_view id) {
+[[nodiscard]] bool SafeAiriStageName(std::string_view id) {
 	const auto name = QString::fromUtf8(id.data(), id.size());
 	const auto pattern = u"^[a-zA-Z\\.\\-_0-9/]+$"_q;
 	return !name.startsWith('/')
@@ -60,8 +83,8 @@ constexpr auto kContextMessagesLimit = 40;
 		&& QRegularExpression(pattern).match(name).hasMatch();
 }
 
-[[nodiscard]] QByteArray ReadAvatarStageResource(std::string_view id) {
-	auto file = QFile(u":/avatar-stage/"_q
+[[nodiscard]] QByteArray ReadAiriStageResource(std::string_view id) {
+	auto file = QFile(u":/airi-stage/"_q
 		+ QString::fromUtf8(id.data(), id.size()));
 	return file.open(QIODevice::ReadOnly) ? file.readAll() : QByteArray();
 }
@@ -184,7 +207,7 @@ void Section::setupWebview() {
 	updateWebviewGeometry();
 
 	raw->setNavigationStartHandler([=](const QString &uri, bool) {
-		return uri.startsWith(u"http://desktop-app-resource/avatar-stage/"_q);
+		return uri.startsWith(u"http://desktop-app-resource/airi-stage/"_q);
 	});
 	raw->setNavigationDoneHandler([=](bool success) {
 		if (!success) {
@@ -216,7 +239,7 @@ window.TelegramWebviewProxy = {
 	}
 };
 )JS");
-	raw->navigateToData("avatar-stage/index.html");
+	raw->navigateToData("airi-stage/index.html");
 }
 
 void Section::showFallback() {
@@ -364,18 +387,22 @@ void Section::previewSpeech(const QString &text) {
 }
 
 Webview::DataResult Section::handleDataRequest(Webview::DataRequest request) {
-	const auto pos = request.id.find('#');
-	if (pos != request.id.npos) {
-		request.id = request.id.substr(0, pos);
+	const auto hash = request.id.find('#');
+	if (hash != request.id.npos) {
+		request.id = request.id.substr(0, hash);
 	}
-	if (!request.id.starts_with("avatar-stage/")) {
+	const auto query = request.id.find('?');
+	if (query != request.id.npos) {
+		request.id = request.id.substr(0, query);
+	}
+	if (!request.id.starts_with("airi-stage/")) {
 		return Webview::DataResult::Failed;
 	}
-	const auto id = std::string_view(request.id).substr(13);
-	if (!SafeAvatarStageName(id)) {
+	const auto id = std::string_view(request.id).substr(11);
+	if (!SafeAiriStageName(id)) {
 		return Webview::DataResult::Failed;
 	}
-	auto bytes = ReadAvatarStageResource(id);
+	auto bytes = ReadAiriStageResource(id);
 	if (bytes.isEmpty()) {
 		return Webview::DataResult::Failed;
 	}

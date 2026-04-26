@@ -1,0 +1,2 @@
+import{jt as e,ot as t}from"./vue.runtime.esm-bundler-DT6ez1Hp.js";import{b as n,f as r}from"./dist-B9WcaE9T.js";function i(i,a,o){let s=r(i,e(a),o),c=n(s),{resume:l,pause:u}=t(c,e=>s.value=e,o);return t(s,e=>{u(),c.value=e,l()},o),c}export{i as t};
+//# sourceMappingURL=use-local-storage-manual-reset-BFNTCzcl.js.map

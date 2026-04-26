@@ -1,0 +1,2 @@
+var e=`useandom-26T198340PX75pxJACKVERYMINDBUSHWOLF_GQZbfghjklqvwyzrict`,t=e=>crypto.getRandomValues(new Uint8Array(e)),n=(e,t,n)=>{let r=(2<<Math.log2(e.length-1))-1,i=-~(1.6*r*t/e.length);return(a=t)=>{let o=``;for(;;){let t=n(i),s=i|0;for(;s--;)if(o+=e[t[s]&r]||``,o.length>=a)return o}}},r=(e,r=21)=>n(e,r|0,t),i=(t=21)=>{let n=``,r=crypto.getRandomValues(new Uint8Array(t|=0));for(;t--;)n+=e[r[t]&63];return n};export{i as n,r as t};
+//# sourceMappingURL=index.browser-42NbNX1c.js.map

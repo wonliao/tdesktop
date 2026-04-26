@@ -1,0 +1,2 @@
+import{q as e,w as t}from"./vue.runtime.esm-bundler-DT6ez1Hp.js";import{t as n}from"./_plugin-vue_export-helper-CRt-r6Cj.js";var r={};function i(n,r){return e(),t(`div`,null,` Settings `)}var a=n(r,[[`render`,i]]);export{a as default};
+//# sourceMappingURL=settings-Cu6aXCMZ.js.map

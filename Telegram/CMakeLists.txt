@@ -1953,6 +1953,7 @@ PRIVATE
     qrc/emoji_8.qrc
     qrc/emoji_preview.qrc
     qrc/telegram/animations.qrc
+    qrc/telegram/airi_stage.qrc
     qrc/telegram/avatar_stage.qrc
     qrc/telegram/export.qrc
     qrc/telegram/iv.qrc

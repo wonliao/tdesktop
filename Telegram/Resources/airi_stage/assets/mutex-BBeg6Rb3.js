@@ -1,0 +1,2 @@
+import{t as e}from"./semaphore-CCKCxhNz.js";var t=class{semaphore=new e(1);get isLocked(){return this.semaphore.available===0}async acquire(){return this.semaphore.acquire()}release(){this.semaphore.release()}};export{t};
+//# sourceMappingURL=mutex-BBeg6Rb3.js.map

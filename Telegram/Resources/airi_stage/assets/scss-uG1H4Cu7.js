@@ -1,0 +1,1 @@
+import{t as e}from"./scss-BO2OASrl.js";export{e as default};

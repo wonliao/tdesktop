@@ -1,0 +1,1 @@
+import{t as e}from"./shellscript-on-60gQK.js";export{e as default};

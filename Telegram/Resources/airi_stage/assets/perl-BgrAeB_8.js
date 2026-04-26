@@ -1,0 +1,1 @@
+import{t as e}from"./perl-ks5GS6Wl.js";export{e as default};
