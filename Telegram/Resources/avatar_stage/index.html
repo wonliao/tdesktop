@@ -669,18 +669,20 @@
 
       window.addEventListener("telegram-ai:aiAnalysis", function (event) {
         state.analysis = event.detail || null;
-        if (!state.analysis?.available) {
-          setStatus("LLM context unavailable.");
+        if (!state.analysis?.ok) {
+          setStatus(state.analysis?.error?.message || "LLM context unavailable.");
           return;
         }
-        setStatus(`LLM context: ${state.analysis.messageCount || 0} messages · ${state.analysis.latestMessage || ""}`);
+        setStatus(state.analysis.displayText || `LLM context: ${state.analysis.messageCount || 0} messages`);
       });
 
       window.addEventListener("telegram-ai:ttsStatus", function (event) {
-        if (event.detail?.speaking) {
+        if (event.detail?.error?.message) {
+          setStatus(event.detail.error.message);
+        } else if (event.detail?.speaking) {
           setStatus("TTS preview speaking...");
-        } else if (state.analysis?.latestMessage) {
-          setStatus(`LLM context: ${state.analysis.messageCount || 0} messages · ${state.analysis.latestMessage}`);
+        } else if (state.analysis?.displayText) {
+          setStatus(state.analysis.displayText);
         }
       });
 
@@ -690,7 +692,7 @@
 
       tts?.addEventListener("click", function () {
         postEvent("request_tts", {
-          text: state.analysis?.latestMessage || lastMessageText() || "AIRI avatar TTS preview",
+          text: state.analysis?.speechText || state.analysis?.displayText || lastMessageText() || "AIRI avatar TTS preview",
         });
       });
     })();

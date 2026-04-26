@@ -28,7 +28,6 @@ namespace Ai {
 namespace {
 
 constexpr auto kContextMessagesLimit = 40;
-constexpr auto kSpeechPreviewMs = 1800;
 
 [[nodiscard]] std::string MimeFor(std::string_view id) {
 	if (id.ends_with(".html")) {
@@ -259,7 +258,8 @@ void Section::handleMessage(const QJsonDocument &message) {
 		postEvent(u"chatContext"_q, chatContext());
 	} else if (event == u"request_ai_analysis"_q
 		|| event == u"requestAiAnalysis"_q) {
-		postEvent(u"aiAnalysis"_q, aiAnalysis());
+		const auto task = object.value("data").toObject().value("task").toString();
+		postEvent(u"aiAnalysis"_q, aiAnalysis(task));
 	} else if (event == u"request_tts"_q || event == u"requestTts"_q) {
 		const auto text = object.value("data").toObject().value("text").toString();
 		previewSpeech(text);
@@ -304,51 +304,29 @@ void Section::postCommand(const QJsonObject &data) {
 void Section::loadAvatar() {
 	postCommand({
 		{ "type", "loadCharacter" },
-		{ "profile", QJsonObject{
-			{ "name", "AIRI Avatar" },
-			{ "rendererType", "placeholder" },
-		} },
+		{ "profile", _providers.avatarProfile() },
 	});
 }
 
 void Section::showCapabilities() {
-	postEvent(u"aiCapabilities"_q, {
-		{ "avatar", QJsonObject{
-			{ "name", "AIRI Avatar" },
-			{ "runtime", "telegram-avatar WebStage" },
-		} },
-		{ "llm", QJsonObject{
-			{ "bridge", "native" },
-			{ "contextMessagesLimit", kContextMessagesLimit },
-		} },
-		{ "tts", QJsonObject{
-			{ "bridge", "native" },
-			{ "preview", true },
-		} },
-	});
+	postEvent(u"aiCapabilities"_q, _providers.capabilities(kContextMessagesLimit));
 }
 
-QJsonObject Section::aiAnalysis() const {
-	const auto context = chatContext();
-	const auto messages = context.value("messages").toArray();
-	auto latest = QString();
-	if (!messages.isEmpty()) {
-		latest = messages.last().toObject().value("text").toString();
-	}
-	return {
-		{ "available", context.value("available").toBool() },
-		{ "provider", "native-chat-context" },
-		{ "chatTitle", context.value("title").toString() },
-		{ "messageCount", messages.size() },
-		{ "latestMessage", latest },
-	};
+QJsonObject Section::aiAnalysis(const QString &task) const {
+	return _providers.analyze(chatContext(), task);
 }
 
 void Section::previewSpeech(const QString &text) {
-	const auto duration = std::min(
-		kSpeechPreviewMs,
-		std::max(700, int(text.size()) * 45));
+	const auto result = _providers.synthesizeSpeech(text);
+	if (!result.value("ok").toBool()) {
+		postEvent(u"ttsStatus"_q, result);
+		return;
+	}
+	const auto duration = result.value("durationMs").toInt();
 	postEvent(u"ttsStatus"_q, {
+		{ "available", true },
+		{ "ok", true },
+		{ "provider", result.value("provider").toString() },
 		{ "speaking", true },
 		{ "durationMs", duration },
 	});
@@ -359,6 +337,11 @@ void Section::previewSpeech(const QString &text) {
 	postCommand({
 		{ "type", "setMouthOpen" },
 		{ "doubleValue", 0.68 },
+	});
+	postCommand({
+		{ "type", "setSpeechAudio" },
+		{ "stringValue", result.value("audioBase64").toString() },
+		{ "stringValue2", result.value("mimeType").toString() },
 	});
 	const auto script = QByteArray(
 		"window.setTimeout(function() {"

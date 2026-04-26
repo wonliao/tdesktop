@@ -1,5 +1,6 @@
 #pragma once
 
+#include "ai/ai_provider.h"
 #include "window/section_widget.h"
 #include "webview/webview_common.h"
 
@@ -53,12 +54,13 @@ private:
 	void showCapabilities();
 	void previewSpeech(const QString &text);
 
-	[[nodiscard]] QJsonObject aiAnalysis() const;
+	[[nodiscard]] QJsonObject aiAnalysis(const QString &task) const;
 
 	[[nodiscard]] Webview::DataResult handleDataRequest(
 		Webview::DataRequest request);
 
 	std::unique_ptr<Webview::Window> _webview;
+	ProviderFacade _providers;
 	Ui::RpWidget *_fallback = nullptr;
 	bool _destroying = false;
 };
