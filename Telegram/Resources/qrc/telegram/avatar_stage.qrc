@@ -4,6 +4,8 @@
     <file alias="live2d-lipsync.js">../../avatar_stage/live2d-lipsync.js</file>
     <file alias="live2d-runtime.js">../../avatar_stage/live2d-runtime.js</file>
     <file alias="models/live2d/hijiki.zip">../../avatar_stage/models/live2d/hijiki.zip</file>
+    <file alias="models/vrm/frieren.vrm">../../avatar_stage/models/vrm/frieren.vrm</file>
+    <file alias="models/vrm/idle_loop.vrma">../../avatar_stage/models/vrm/idle_loop.vrma</file>
     <file alias="providers/live2d-provider.js">../../avatar_stage/providers/live2d-provider.js</file>
     <file alias="providers/placeholder-provider.js">../../avatar_stage/providers/placeholder-provider.js</file>
     <file alias="providers/vrm-provider.js">../../avatar_stage/providers/vrm-provider.js</file>

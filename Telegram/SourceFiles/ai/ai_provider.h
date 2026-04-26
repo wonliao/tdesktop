@@ -7,6 +7,7 @@ namespace Ai {
 class ProviderFacade final {
 public:
 	[[nodiscard]] QJsonObject avatarProfile() const;
+	[[nodiscard]] QJsonObject avatarProfile(const QString &id) const;
 	[[nodiscard]] QJsonObject capabilities(int contextMessagesLimit) const;
 	[[nodiscard]] QJsonObject analyze(
 		const QJsonObject &context,

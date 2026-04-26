@@ -256,6 +256,13 @@ void Section::handleMessage(const QJsonDocument &message) {
 	} else if (event == u"request_chat_context"_q
 		|| event == u"requestChatContext"_q) {
 		postEvent(u"chatContext"_q, chatContext());
+	} else if (event == u"request_avatar_profile"_q
+		|| event == u"requestAvatarProfile"_q) {
+		const auto id = object.value("data").toObject().value("id").toString();
+		postCommand({
+			{ "type", "loadCharacter" },
+			{ "profile", _providers.avatarProfile(id) },
+		});
 	} else if (event == u"request_ai_analysis"_q
 		|| event == u"requestAiAnalysis"_q) {
 		const auto task = object.value("data").toObject().value("task").toString();

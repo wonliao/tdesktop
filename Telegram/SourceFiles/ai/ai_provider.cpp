@@ -96,11 +96,22 @@ void AppendUInt32(QByteArray &bytes, uint32 value) {
 	};
 }
 
-} // namespace
-
-QJsonObject ProviderFacade::avatarProfile() const {
+[[nodiscard]] QJsonObject VrmFrierenProfile() {
 	return {
-		{ "name", "AIRI Live2D" },
+		{ "id", "vrm-frieren" },
+		{ "name", "AIRI VRM Frieren" },
+		{ "rendererType", "vrm" },
+		{ "modelURL", "./models/vrm/frieren.vrm" },
+		{ "animationURL", "./models/vrm/idle_loop.vrma" },
+		{ "fallbackRendererType", "placeholder" },
+		{ "provider", kProvider },
+	};
+}
+
+[[nodiscard]] QJsonObject Live2DHijikiProfile() {
+	return {
+		{ "id", "live2d-hijiki" },
+		{ "name", "AIRI Live2D Hijiki" },
 		{ "rendererType", "live2d" },
 		{ "modelURL", "./models/live2d/hijiki.zip" },
 		{ "fallbackRendererType", "placeholder" },
@@ -108,14 +119,36 @@ QJsonObject ProviderFacade::avatarProfile() const {
 	};
 }
 
+[[nodiscard]] QJsonArray AvatarProfiles() {
+	return {
+		VrmFrierenProfile(),
+		Live2DHijikiProfile(),
+	};
+}
+
+} // namespace
+
+QJsonObject ProviderFacade::avatarProfile() const {
+	return avatarProfile(u"vrm-frieren"_q);
+}
+
+QJsonObject ProviderFacade::avatarProfile(const QString &id) const {
+	if (id == u"live2d-hijiki"_q) {
+		return Live2DHijikiProfile();
+	}
+	return VrmFrierenProfile();
+}
+
 QJsonObject ProviderFacade::capabilities(int contextMessagesLimit) const {
 	const auto config = LoadConfig();
 	return {
 		{ "avatar", QJsonObject{
-			{ "name", "AIRI Live2D" },
+			{ "name", "AIRI VRM Frieren" },
 			{ "runtime", "telegram-avatar WebStage" },
-			{ "rendererType", "live2d" },
-			{ "model", "hijiki.zip" },
+			{ "rendererType", "vrm" },
+			{ "model", "frieren.vrm" },
+			{ "defaultProfileId", "vrm-frieren" },
+			{ "profiles", AvatarProfiles() },
 		} },
 		{ "llm", QJsonObject{
 			{ "bridge", "native" },

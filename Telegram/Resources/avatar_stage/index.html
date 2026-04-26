@@ -277,6 +277,32 @@
       background: rgba(77,163,255,0.22);
     }
 
+    .ai-profile-row {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 6px;
+    }
+
+    .ai-profile-button {
+      height: 24px;
+      padding: 0 8px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: rgba(255,255,255,0.05);
+      color: var(--muted);
+      font: inherit;
+      font-size: 11px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .ai-profile-button.is-active {
+      border-color: rgba(77,163,255,0.48);
+      background: rgba(77,163,255,0.18);
+      color: var(--text);
+    }
+
     .stage-loading {
       position: absolute;
       inset: 0;
@@ -488,6 +514,7 @@
       <button class="ai-panel-button" type="button" data-ai-analyze>LLM</button>
       <button class="ai-panel-button" type="button" data-ai-tts>TTS</button>
     </div>
+    <div class="ai-profile-row" data-ai-profiles></div>
     <div class="ai-panel-status" data-ai-status>Waiting for chat context...</div>
   </section>
   <script>
@@ -615,9 +642,12 @@
       const status = document.querySelector("[data-ai-status]");
       const analyze = document.querySelector("[data-ai-analyze]");
       const tts = document.querySelector("[data-ai-tts]");
+      const profiles = document.querySelector("[data-ai-profiles]");
       const state = {
         context: null,
         analysis: null,
+        profiles: [],
+        profileId: "",
       };
 
       function postEvent(event, data) {
@@ -649,10 +679,43 @@
         }
       }
 
-      window.addEventListener("telegram-ai:aiCapabilities", function (event) {
-        if (title) {
-          title.textContent = event.detail?.avatar?.name || "AIRI Avatar";
+      function setActiveProfile(id) {
+        state.profileId = id || "";
+        profiles?.querySelectorAll("[data-ai-profile-id]").forEach(function (button) {
+          button.classList.toggle("is-active", button.dataset.aiProfileId === state.profileId);
+        });
+      }
+
+      function renderProfiles(items, defaultProfileId) {
+        state.profiles = Array.isArray(items) ? items : [];
+        if (!profiles) {
+          return;
         }
+        profiles.replaceChildren();
+        state.profiles.forEach(function (profile) {
+          const button = document.createElement("button");
+          button.className = "ai-profile-button";
+          button.type = "button";
+          button.textContent = profile.rendererType === "live2d" ? "Live2D" : "VRM";
+          button.dataset.aiProfileId = String(profile.id || "");
+          button.addEventListener("click", function () {
+            setActiveProfile(profile.id);
+            if (title) {
+              title.textContent = profile.name || "AIRI Avatar";
+            }
+            postEvent("request_avatar_profile", { id: profile.id });
+          });
+          profiles.appendChild(button);
+        });
+        setActiveProfile(defaultProfileId || state.profiles[0]?.id || "");
+      }
+
+      window.addEventListener("telegram-ai:aiCapabilities", function (event) {
+        const avatar = event.detail?.avatar || {};
+        if (title) {
+          title.textContent = avatar.name || "AIRI Avatar";
+        }
+        renderProfiles(avatar.profiles, avatar.defaultProfileId);
       });
 
       window.addEventListener("telegram-ai:chatContext", function (event) {
