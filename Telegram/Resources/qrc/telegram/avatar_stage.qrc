@@ -1,0 +1,19 @@
+<RCC>
+  <qresource prefix="/avatar-stage">
+    <file alias="index.html">../../avatar_stage/index.html</file>
+    <file alias="live2d-lipsync.js">../../avatar_stage/live2d-lipsync.js</file>
+    <file alias="live2d-runtime.js">../../avatar_stage/live2d-runtime.js</file>
+    <file alias="providers/live2d-provider.js">../../avatar_stage/providers/live2d-provider.js</file>
+    <file alias="providers/placeholder-provider.js">../../avatar_stage/providers/placeholder-provider.js</file>
+    <file alias="providers/vrm-provider.js">../../avatar_stage/providers/vrm-provider.js</file>
+    <file alias="runtime-core.js">../../avatar_stage/runtime-core.js</file>
+    <file alias="stage-bridge.js">../../avatar_stage/stage-bridge.js</file>
+    <file alias="vrm-core.js">../../avatar_stage/vrm-core.js</file>
+    <file alias="vrm-lipsync.js">../../avatar_stage/vrm-lipsync.js</file>
+    <file alias="vrm-loader.js">../../avatar_stage/vrm-loader.js</file>
+    <file alias="vrm-vendor.js">../../avatar_stage/vrm-vendor.js</file>
+    <file alias="wlipsync/profile.json">../../avatar_stage/wlipsync/profile.json</file>
+    <file alias="wlipsync/wlipsync-single.js">../../avatar_stage/wlipsync/wlipsync-single.js</file>
+    <file alias="wlipsync/wlipsync-standalone.js">../../avatar_stage/wlipsync/wlipsync-standalone.js</file>
+  </qresource>
+</RCC>

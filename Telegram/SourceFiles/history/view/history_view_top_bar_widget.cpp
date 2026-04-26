@@ -9,6 +9,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 
 #include "history/history.h"
 #include "history/view/history_view_send_action.h"
+#include "ai/ai_tabbed_memento.h"
 #include "boxes/add_contact_box.h"
 #include "ui/boxes/confirm_box.h"
 #include "info/info_memento.h"
@@ -448,14 +449,7 @@ void TopBarWidget::toggleInfoSection() {
 			Core::App().saveSettingsDelayed();
 			if (isThreeColumn) {
 				_controller->showSection(
-					(_activeChat.key.topic()
-						? std::make_shared<Info::Memento>(
-							_activeChat.key.topic())
-						: (_activeChat.key.sublist()
-							&& _activeChat.key.sublist()->parentChat())
-						? std::make_shared<Info::Memento>(
-							_activeChat.key.sublist())
-						: Info::Memento::Default(_activeChat.key.peer())),
+					Ai::MakeTabbedMemento(_activeChat.key),
 					Window::SectionShow().withThirdColumn());
 			} else {
 				_controller->resizeForThirdSection();

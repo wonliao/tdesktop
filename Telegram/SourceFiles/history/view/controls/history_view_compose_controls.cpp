@@ -7,6 +7,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "history/view/controls/history_view_compose_controls.h"
 
+#include "ai/ai_tabbed_memento.h"
 #include "base/call_delayed.h"
 #include "base/event_filter.h"
 #include "base/platform/base_platform_info.h"
@@ -3334,7 +3335,16 @@ void ComposeControls::initAiButton() {
 			_aiTooltipManager->hideAndRemember();
 		}
 		updateAiButtonVisibility();
-		showAiComposeBox();
+		if (_regularWindow) {
+			_regularWindow->resizeForThirdSection();
+			_regularWindow->showSection(
+				Ai::MakeTabbedMemento(
+					_regularWindow->activeChatCurrent(),
+					true),
+				Window::SectionShow().withThirdColumn());
+		} else {
+			showAiComposeBox();
+		}
 	});
 
 	_aiTooltipManager = std::make_unique<Controls::AiTooltipManager>(
@@ -3673,8 +3683,7 @@ void ComposeControls::updateControlsVisibility() {
 }
 
 void ComposeControls::updateAiButtonVisibility() {
-	const auto hidden = !hasEnoughLinesForAi()
-		|| !_wrap->isVisible()
+	const auto hidden = !_wrap->isVisible()
 		|| _recording.current()
 		|| !_field->isVisible();
 	if (_aiButton->isHidden() == hidden) {
