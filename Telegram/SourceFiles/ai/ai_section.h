@@ -50,9 +50,10 @@ private:
 	void handleMessage(const QJsonDocument &message);
 	void postEvent(const QString &event, const QJsonObject &data);
 	void postCommand(const QJsonObject &data);
-	void installBriefPanel();
 	void loadAvatar();
+	void loadBriefAction();
 	void showCapabilities();
+	void showBrief(const QString &task);
 	void previewSpeech(const QString &text);
 
 	[[nodiscard]] QJsonObject aiAnalysis(const QString &task) const;

@@ -83,7 +83,7 @@ The AI page SHALL 透過 bundled WebStage runtime 載入 AIRI avatar profile。
 - **THEN** AI page fallback 到 placeholder avatar，且 text results 仍可使用
 
 ### Requirement: AI tab provides active chat brief
-The AI page SHALL provide an AI Brief action that summarizes the current active chat's bounded recent text context through the native bridge.
+The AI page SHALL provide an AI Brief action that summarizes the current active chat's bounded recent text context through the same native-to-WebStage command bridge used by the avatar runtime.
 
 #### Scenario: Run AI brief from AI tab
 - **WHEN** 使用者從 compose AI entry point 開啟第三欄 AI tab 並啟動 AI Brief
@@ -91,7 +91,7 @@ The AI page SHALL provide an AI Brief action that summarizes the current active 
 
 #### Scenario: Display AI brief result
 - **WHEN** native code 回傳 successful brief result
-- **THEN** AI page 在右側 AI panel 顯示 brief text，且不修改 compose input、不自動送出訊息
+- **THEN** native code 送出 WebStage brief command，AI page 在右側 AI panel 顯示 brief text，且不修改 compose input、不自動送出訊息
 
 #### Scenario: AI brief unavailable without active chat
 - **WHEN** 使用者在沒有 active chat 或沒有可分析文字訊息的狀態下啟動 AI Brief

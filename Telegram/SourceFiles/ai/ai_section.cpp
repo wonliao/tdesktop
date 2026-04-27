@@ -213,7 +213,7 @@ void Section::setupWebview() {
 		if (!success) {
 			showFallback();
 		} else {
-			installBriefPanel();
+			loadBriefAction();
 		}
 	});
 	raw->setMessageHandler([=](const QJsonDocument &message) {
@@ -227,10 +227,97 @@ window.TelegramAiBridge = {
 	receiveEvent: function(eventType, eventData) {
 		window.dispatchEvent(new CustomEvent("telegram-ai:" + eventType, { detail: eventData || {} }));
 	},
+	receiveCommand: function(commandData) {
+		var command = commandData || {};
+		window.dispatchEvent(new CustomEvent("telegram-ai:command", { detail: command }));
+		if (command.type === "configureAiBrief" || command.type === "showAiBrief") {
+			window.TelegramAiBridge.handleBriefCommand(command);
+		}
+	},
 	postEvent: function(eventType, eventData) {
 		if (window.external && window.external.invoke) {
 			window.external.invoke(JSON.stringify({ event: eventType, data: eventData || {} }));
 		}
+	},
+	handleBriefCommand: function(command) {
+		var ensure = function() {
+			if (!document.body) {
+				window.setTimeout(ensure, 50);
+				return;
+			}
+			var panel = document.getElementById("telegram-ai-brief-panel");
+			if (!panel) {
+				panel = document.createElement("div");
+				panel.id = "telegram-ai-brief-panel";
+				panel.style.position = "fixed";
+				panel.style.left = "12px";
+				panel.style.right = "12px";
+				panel.style.bottom = "12px";
+				panel.style.zIndex = "2147483647";
+				panel.style.display = "flex";
+				panel.style.flexDirection = "column";
+				panel.style.gap = "8px";
+				panel.style.padding = "10px";
+				panel.style.borderRadius = "12px";
+				panel.style.border = "1px solid rgba(148, 163, 184, 0.35)";
+				panel.style.background = "rgba(15, 23, 42, 0.88)";
+				panel.style.color = "white";
+				panel.style.boxShadow = "0 10px 30px rgba(0, 0, 0, 0.28)";
+				panel.style.fontFamily = "system-ui, -apple-system, BlinkMacSystemFont, sans-serif";
+				panel.style.fontSize = "13px";
+				panel.style.backdropFilter = "blur(18px)";
+				var header = document.createElement("div");
+				header.style.display = "flex";
+				header.style.alignItems = "center";
+				header.style.justifyContent = "space-between";
+				header.style.gap = "8px";
+				var title = document.createElement("div");
+				title.textContent = command.title || "AI Brief";
+				title.style.fontWeight = "650";
+				var button = document.createElement("button");
+				button.type = "button";
+				button.textContent = command.label || "Brief";
+				button.style.border = "0";
+				button.style.borderRadius = "999px";
+				button.style.padding = "6px 12px";
+				button.style.color = "white";
+				button.style.background = "rgba(59, 130, 246, 0.95)";
+				button.style.cursor = "pointer";
+				button.style.font = "inherit";
+				var result = document.createElement("pre");
+				result.dataset.telegramAiBriefResult = "1";
+				result.style.display = "none";
+				result.style.maxHeight = "220px";
+				result.style.margin = "0";
+				result.style.overflow = "auto";
+				result.style.whiteSpace = "pre-wrap";
+				result.style.wordBreak = "break-word";
+				result.style.color = "rgba(255, 255, 255, 0.92)";
+				result.style.font = "12px/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace";
+				button.addEventListener("click", function() {
+					result.style.display = "block";
+					result.style.color = "rgba(255, 255, 255, 0.92)";
+					result.textContent = "Loading...";
+					window.TelegramAiBridge.postEvent("request_ai_brief", { task: "ai_brief" });
+				});
+				header.appendChild(title);
+				header.appendChild(button);
+				panel.appendChild(header);
+				panel.appendChild(result);
+				document.body.appendChild(panel);
+			}
+			if (command.type !== "showAiBrief") {
+				return;
+			}
+			var result = panel.querySelector("[data-telegram-ai-brief-result]");
+			var analysis = command.analysis || {};
+			result.style.display = "block";
+			result.style.color = analysis.ok ? "rgba(255, 255, 255, 0.92)" : "#fecaca";
+			result.textContent = analysis.ok
+				? (analysis.displayText || "No brief text returned.")
+				: ((analysis.error && analysis.error.message) || "AI brief failed.");
+		};
+		ensure();
 	}
 };
 window.TelegramWebviewProxy = {
@@ -275,8 +362,8 @@ void Section::handleMessage(const QJsonDocument &message) {
 		event = object.value("type").toString();
 	}
 	if (event == u"ready"_q || event == u"bridgeReady"_q) {
-		installBriefPanel();
 		loadAvatar();
+		loadBriefAction();
 		showCapabilities();
 		postEvent(u"chatContext"_q, chatContext());
 	} else if (event == u"request_chat_context"_q
@@ -292,7 +379,13 @@ void Section::handleMessage(const QJsonDocument &message) {
 	} else if (event == u"request_ai_analysis"_q
 		|| event == u"requestAiAnalysis"_q) {
 		const auto task = object.value("data").toObject().value("task").toString();
-		postEvent(u"aiAnalysis"_q, aiAnalysis(task));
+		if (task == u"ai_brief"_q) {
+			showBrief(task);
+		} else {
+			postEvent(u"aiAnalysis"_q, aiAnalysis(task));
+		}
+	} else if (event == u"request_ai_brief"_q || event == u"requestAiBrief"_q) {
+		showBrief(u"ai_brief"_q);
 	} else if (event == u"request_tts"_q || event == u"requestTts"_q) {
 		const auto text = object.value("data").toObject().value("text").toString();
 		previewSpeech(text);
@@ -324,123 +417,23 @@ void Section::postCommand(const QJsonObject &data) {
 	}
 	const auto payload = QJsonDocument(data).toJson(QJsonDocument::Compact);
 	const auto script = QByteArray(
-		"if (window.stageBridge && window.stageBridge.handleNativeCommand) { "
-			"window.stageBridge.handleNativeCommand(")
+		"var __telegramNativeCommand = ")
 		+ payload
-		+ "); } else { window.__pendingStageCommands = window.__pendingStageCommands || []; "
-			"window.__pendingStageCommands.push("
+		+ "; var __telegramNativeCommandHandled = false;"
+			"if (window.stageBridge && window.stageBridge.handleNativeCommand) { "
+				"try { window.stageBridge.handleNativeCommand("
+		+ payload
+		+ "); __telegramNativeCommandHandled = true; } catch (e) {} } "
+			"if (window.TelegramAiBridge && window.TelegramAiBridge.receiveCommand) { "
+				"window.TelegramAiBridge.receiveCommand("
+		+ payload
+		+ "); __telegramNativeCommandHandled = true; } "
+			"if (!__telegramNativeCommandHandled) { "
+				"window.__pendingStageCommands = window.__pendingStageCommands || []; "
+				"window.__pendingStageCommands.push("
 		+ payload
 		+ "); }";
 	_webview->eval(script);
-}
-
-void Section::installBriefPanel() {
-	if (!_webview || !_webview->widget()) {
-		return;
-	}
-	_webview->eval(R"JS(
-(function() {
-	if (window.__telegramAiBriefInstalled) {
-		return;
-	}
-	window.__telegramAiBriefInstalled = true;
-	var ensure = function() {
-		if (!document.body) {
-			window.setTimeout(ensure, 50);
-			return;
-		}
-		if (document.getElementById("telegram-ai-brief-panel")) {
-			return;
-		}
-		var panel = document.createElement("div");
-		panel.id = "telegram-ai-brief-panel";
-		panel.style.position = "fixed";
-		panel.style.left = "12px";
-		panel.style.right = "12px";
-		panel.style.bottom = "12px";
-		panel.style.zIndex = "2147483647";
-		panel.style.display = "flex";
-		panel.style.flexDirection = "column";
-		panel.style.gap = "8px";
-		panel.style.padding = "10px";
-		panel.style.borderRadius = "12px";
-		panel.style.border = "1px solid rgba(148, 163, 184, 0.35)";
-		panel.style.background = "rgba(15, 23, 42, 0.88)";
-		panel.style.color = "white";
-		panel.style.boxShadow = "0 10px 30px rgba(0, 0, 0, 0.28)";
-		panel.style.fontFamily = "system-ui, -apple-system, BlinkMacSystemFont, sans-serif";
-		panel.style.fontSize = "13px";
-		panel.style.backdropFilter = "blur(18px)";
-		var header = document.createElement("div");
-		header.style.display = "flex";
-		header.style.alignItems = "center";
-		header.style.justifyContent = "space-between";
-		header.style.gap = "8px";
-		var title = document.createElement("div");
-		title.textContent = "AI Brief";
-		title.style.fontWeight = "650";
-		var button = document.createElement("button");
-		button.type = "button";
-		button.textContent = "Brief";
-		button.style.border = "0";
-		button.style.borderRadius = "999px";
-		button.style.padding = "6px 12px";
-		button.style.color = "white";
-		button.style.background = "rgba(59, 130, 246, 0.95)";
-		button.style.cursor = "pointer";
-		button.style.font = "inherit";
-		var result = document.createElement("pre");
-		result.textContent = "Ready";
-		result.style.display = "none";
-		result.style.maxHeight = "220px";
-		result.style.margin = "0";
-		result.style.overflow = "auto";
-		result.style.whiteSpace = "pre-wrap";
-		result.style.wordBreak = "break-word";
-		result.style.color = "rgba(255, 255, 255, 0.92)";
-		result.style.font = "12px/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace";
-		header.appendChild(title);
-		header.appendChild(button);
-		panel.appendChild(header);
-		panel.appendChild(result);
-		document.body.appendChild(panel);
-		var awaitingBrief = false;
-		var setResult = function(text, failed) {
-			result.style.display = "block";
-			result.style.color = failed ? "#fecaca" : "rgba(255, 255, 255, 0.92)";
-			result.textContent = text;
-		};
-		button.addEventListener("click", function() {
-			awaitingBrief = true;
-			setResult("Loading...", false);
-			if (window.TelegramAiBridge && window.TelegramAiBridge.postEvent) {
-				window.TelegramAiBridge.postEvent("request_ai_analysis", { task: "ai_brief" });
-			} else if (window.external && window.external.invoke) {
-				window.external.invoke(JSON.stringify({
-					event: "request_ai_analysis",
-					data: { task: "ai_brief" }
-				}));
-			} else {
-				setResult("Native bridge is unavailable.", true);
-			}
-		});
-		window.addEventListener("telegram-ai:aiAnalysis", function(event) {
-			var detail = event.detail || {};
-			if (detail.task !== "ai_brief" && !awaitingBrief) {
-				return;
-			}
-			awaitingBrief = false;
-			if (detail.ok) {
-				setResult(detail.displayText || "No brief text returned.", false);
-			} else {
-				var error = detail.error || {};
-				setResult(error.message || "AI brief failed.", true);
-			}
-		});
-	};
-	ensure();
-})();
-)JS");
 }
 
 void Section::loadAvatar() {
@@ -450,12 +443,31 @@ void Section::loadAvatar() {
 	});
 }
 
+void Section::loadBriefAction() {
+	postCommand({
+		{ "type", "configureAiBrief" },
+		{ "title", "AI Brief" },
+		{ "label", "Brief" },
+		{ "task", "ai_brief" },
+	});
+}
+
 void Section::showCapabilities() {
 	postEvent(u"aiCapabilities"_q, _providers.capabilities(kContextMessagesLimit));
 }
 
 QJsonObject Section::aiAnalysis(const QString &task) const {
 	return _providers.analyze(chatContext(), task);
+}
+
+void Section::showBrief(const QString &task) {
+	const auto result = aiAnalysis(task);
+	postEvent(u"aiAnalysis"_q, result);
+	postCommand({
+		{ "type", "showAiBrief" },
+		{ "task", task },
+		{ "analysis", result },
+	});
 }
 
 void Section::previewSpeech(const QString &text) {
