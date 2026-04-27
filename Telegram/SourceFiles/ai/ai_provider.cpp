@@ -43,6 +43,75 @@ struct ProviderConfig {
 	return text;
 }
 
+[[nodiscard]] QString BriefLine(QString text) {
+	text = text.simplified();
+	if (text.size() > 110) {
+		text = text.left(107) + u"..."_q;
+	}
+	return text;
+}
+
+[[nodiscard]] QJsonObject BuildBriefResult(
+		const QJsonObject &context,
+		const QJsonArray &messages,
+		const QStringList &participants) {
+	const auto title = context.value("title").toString();
+	const auto count = int(messages.size());
+	const auto latest = messages.last().toObject().value("text").toString();
+	const auto first = std::max(0, count - 5);
+	auto keyPoints = QStringList();
+	auto actionItems = QStringList();
+	for (auto i = first; i != count; ++i) {
+		const auto message = messages.at(i).toObject();
+		const auto sender = message.value("sender").toString();
+		const auto text = BriefLine(message.value("text").toString());
+		if (text.isEmpty()) {
+			continue;
+		}
+		keyPoints.push_back(
+			(sender.isEmpty() ? u"未知"_q : sender) + u"："_q + text);
+		if (text.contains(u"?"_q)
+			|| text.contains(u"？"_q)
+			|| text.contains(u"請"_q)
+			|| text.contains(u"需要"_q)
+			|| text.contains(u"確認"_q)
+			|| text.contains(u"TODO"_q, Qt::CaseInsensitive)) {
+			actionItems.push_back(text);
+		}
+	}
+	const auto actionText = actionItems.isEmpty()
+		? u"目前 recent context 中沒有明確待辦或問題。"_q
+		: actionItems.join(u"\n- "_q);
+	const auto summary = QStringList{
+		u"AI Brief"_q,
+		u""_q,
+		u"聊天："_q + (title.isEmpty() ? u"未命名聊天"_q : title),
+		u"範圍："_q + QString::number(count) + u" 則近期文字訊息，"_q
+				+ QString::number(participants.size()) + u" 位發言者。"_q,
+		u""_q,
+		u"重點："_q,
+		u"- "_q + keyPoints.join(u"\n- "_q),
+		u""_q,
+		u"待確認 / 行動："_q,
+		u"- "_q + actionText,
+		u""_q,
+		u"最新訊息："_q + CleanSnippet(latest),
+	}.join(u"\n"_q);
+	return {
+		{ "available", true },
+		{ "ok", true },
+		{ "provider", kProvider },
+		{ "model", "local-context-brief" },
+		{ "task", "ai_brief" },
+		{ "chatTitle", title },
+		{ "messageCount", count },
+		{ "participantCount", participants.size() },
+		{ "latestMessage", CleanSnippet(latest) },
+		{ "displayText", summary },
+		{ "speechText", summary },
+	};
+}
+
 void AppendUInt16(QByteArray &bytes, uint16 value) {
 	bytes.append(char(value & 0xFF));
 	bytes.append(char((value >> 8) & 0xFF));
@@ -207,6 +276,9 @@ QJsonObject ProviderFacade::analyze(
 				samples.push_back(text);
 			}
 		}
+	}
+	if (task == u"ai_brief"_q) {
+		return BuildBriefResult(context, messages, participants);
 	}
 	const auto title = context.value("title").toString();
 	const auto latest = messages.last().toObject().value("text").toString();

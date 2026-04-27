@@ -50,6 +50,7 @@ private:
 	void handleMessage(const QJsonDocument &message);
 	void postEvent(const QString &event, const QJsonObject &data);
 	void postCommand(const QJsonObject &data);
+	void installBriefPanel();
 	void loadAvatar();
 	void showCapabilities();
 	void previewSpeech(const QString &text);
