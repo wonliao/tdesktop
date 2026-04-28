@@ -1,5 +1,6 @@
 #pragma once
 
+#include "ai/ai_openai_subscription.h"
 #include "ai/ai_provider.h"
 #include "window/section_widget.h"
 #include "webview/webview_common.h"
@@ -50,9 +51,14 @@ private:
 	void handleMessage(const QJsonDocument &message);
 	void postEvent(const QString &event, const QJsonObject &data);
 	void postCommand(const QJsonObject &data);
+	void handleOpenAISubscriptionBridge(const QJsonObject &data);
+	void postOpenAISubscriptionBridgeResult(
+		const QString &requestId,
+		QJsonObject result);
 	void loadAvatar();
 	void loadBriefAction();
 	void showCapabilities();
+	void showOpenAISubscriptionRoute();
 	void showBrief(const QString &task);
 	void previewSpeech(const QString &text);
 
@@ -63,6 +69,7 @@ private:
 
 	std::unique_ptr<Webview::Window> _webview;
 	ProviderFacade _providers;
+	OpenAISubscription _openaiSubscription;
 	Ui::RpWidget *_fallback = nullptr;
 	bool _destroying = false;
 };

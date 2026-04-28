@@ -388,6 +388,8 @@ PRIVATE
     boxes/compose_ai_box.h
     ai/ai_memento.cpp
     ai/ai_memento.h
+    ai/ai_openai_subscription.cpp
+    ai/ai_openai_subscription.h
     ai/ai_provider.cpp
     ai/ai_provider.h
     ai/ai_section.cpp
