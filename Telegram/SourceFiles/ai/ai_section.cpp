@@ -610,31 +610,13 @@ void Section::showOpenAISubscriptionRoute() {
 	_webview->eval(R"JS(
 (function() {
 	var target = "/settings/providers/chat/openai-subscription";
-	var targetHash = "#" + target;
 	var watcherKey = "__telegramOpenAISubscriptionRouteWatcher";
-	var appPath = (function() {
-		try {
-			var base = new URL(document.baseURI);
-			return base.pathname || window.location.pathname;
-		} catch (e) {
-			return window.location.pathname;
-		}
-	})();
 	var attempts = 0;
+	var syncScheduled = false;
 	var setStyles = function(element, styles) {
 		Object.keys(styles).forEach(function(key) {
 			element.style[key] = styles[key];
 		});
-	};
-	var notifyRoute = function() {
-		var event;
-		if (typeof PopStateEvent === "function") {
-			event = new PopStateEvent("popstate", { state: {} });
-		} else {
-			event = document.createEvent("Event");
-			event.initEvent("popstate", false, false);
-		}
-		window.dispatchEvent(event);
 	};
 		var notifyStorage = function(key, value) {
 		try {
@@ -710,6 +692,13 @@ void Section::showOpenAISubscriptionRoute() {
 		return queryIndex >= 0 ? hash.slice(0, queryIndex) : hash;
 	};
 	var routeIsTarget = function() {
+		var candidates = document.querySelectorAll("h1, h2, h3, div, span");
+		for (var i = 0; i != candidates.length; ++i) {
+			var text = (candidates[i].textContent || "").trim();
+			if (text === "服務來源" || text === "Service Sources") {
+				return false;
+			}
+		}
 		return window.location.pathname === target
 			|| currentHashPath() === target;
 	};
@@ -1269,37 +1258,38 @@ void Section::showOpenAISubscriptionRoute() {
 		};
 		var syncRoute = function() {
 			++attempts;
-			if (!document.body) {
+		if (!document.body) {
 				if (attempts < 80) {
 					window.setTimeout(syncRoute, 100);
 				}
 				return;
-		}
-		if (window.location.pathname === target) {
-			window.history.replaceState(
-				{},
-				"",
-				appPath + window.location.search + targetHash);
-			notifyRoute();
 		}
 			ensureOpenAISubscriptionPanel();
 			if (attempts < 80) {
 				window.setTimeout(syncRoute, 100);
 			}
 		};
+	var scheduleSyncRoute = function() {
+		if (syncScheduled) {
+			return;
+		}
+		syncScheduled = true;
+		window.setTimeout(function() {
+			syncScheduled = false;
+			syncRoute();
+		}, 0);
+	};
 	if (!window[watcherKey]) {
 		window[watcherKey] = {};
 		window.addEventListener("hashchange", function() {
-			window.setTimeout(syncRoute, 0);
+			scheduleSyncRoute();
 		});
 		window.addEventListener("popstate", function() {
-			window.setTimeout(syncRoute, 0);
+			scheduleSyncRoute();
 		});
 		if (window.MutationObserver) {
 			window[watcherKey].observer = new MutationObserver(function() {
-				if (routeIsTarget()) {
-					window.setTimeout(syncRoute, 0);
-				}
+				scheduleSyncRoute();
 			});
 			window[watcherKey].observer.observe(document.documentElement, {
 				childList: true,
