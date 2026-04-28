@@ -714,6 +714,7 @@ void Section::showOpenAISubscriptionRoute() {
 			|| currentHashPath() === target;
 	};
 	var cleanupOpenAISubscriptionPanel = function() {
+		var removed = false;
 		[
 			"telegram-openai-subscription-panel",
 			"telegram-openai-subscription-host"
@@ -721,8 +722,15 @@ void Section::showOpenAISubscriptionRoute() {
 			var element = document.getElementById(id);
 			if (element) {
 				element.remove();
+				removed = true;
 			}
 		});
+		if (removed) {
+			try {
+				window.dispatchEvent(new Event("resize"));
+			} catch (e) {
+			}
+		}
 	};
 	var findOpenAISubscriptionTitle = function() {
 		var candidates = document.querySelectorAll("h1, h2, h3, div, span");
@@ -754,54 +762,29 @@ void Section::showOpenAISubscriptionRoute() {
 					host.id = "telegram-openai-subscription-host";
 					host.setAttribute("data-telegram-openai-subscription-host", "1");
 				}
+				var top = 128;
+				if (title) {
+					var rect = title.getBoundingClientRect();
+					top = Math.max(96, rect.bottom + window.scrollY + 8);
+				}
 				setStyles(host, {
 					boxSizing: "border-box",
 					display: "block",
 					width: "100%",
 					margin: "0",
 					padding: "0 0 32px 0",
-					position: "relative",
+					position: "absolute",
+					left: "0",
+					right: "0",
+					top: top + "px",
 					zIndex: "2",
 					visibility: "visible",
 					opacity: "1"
 				});
-				if (!title) {
-					setStyles(host, {
-						padding: "72px 0 32px 0"
-					});
-					var app = document.getElementById("app");
-					var targetHost = document.querySelector("main")
-						|| app
-						|| document.body;
-					if (host.parentElement !== targetHost) {
-						targetHost.appendChild(host);
-					}
-					return host;
+				if (host.parentElement !== document.body) {
+					document.body.appendChild(host);
 				}
-					var anchor = title;
-					for (var i = 0; i != 6; ++i) {
-						var parent = anchor.parentElement;
-						if (!parent || parent === document.body) {
-							break;
-						}
-						var text = (parent.textContent || "").trim();
-						var rect = parent.getBoundingClientRect();
-						var style = window.getComputedStyle(parent);
-						if (text.indexOf("OpenAI (Subscription)") === -1
-							|| (rect.height > 180
-								&& style.overflow !== "hidden"
-								&& style.overflowY !== "hidden")) {
-							break;
-						}
-						anchor = parent;
-					}
-					var targetParent = anchor.parentElement;
-					if (targetParent && host.parentElement !== targetParent) {
-						targetParent.insertBefore(host, anchor.nextSibling);
-					} else if (targetParent && host.previousSibling !== anchor) {
-						targetParent.insertBefore(host, anchor.nextSibling);
-					}
-					return host;
+				return host;
 			};
 			var mountPanel = function(panel) {
 				var host = ensureHost();
