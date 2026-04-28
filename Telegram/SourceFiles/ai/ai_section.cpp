@@ -305,18 +305,18 @@ window.TelegramAiBridge = {
 				return;
 			}
 			var panel = document.getElementById("telegram-ai-brief-panel");
-			if (!panel) {
-				panel = document.createElement("div");
-				panel.id = "telegram-ai-brief-panel";
+			var stylePanel = function(panel) {
 				panel.style.position = "fixed";
 				panel.style.left = "12px";
-				panel.style.right = "12px";
-				panel.style.bottom = "12px";
+				panel.style.right = "auto";
+				panel.style.top = "82px";
+				panel.style.bottom = "auto";
 				panel.style.zIndex = "2147483647";
 				panel.style.display = "flex";
 				panel.style.flexDirection = "column";
 				panel.style.gap = "8px";
-				panel.style.padding = "10px";
+				panel.style.width = "min(260px, calc(100% - 24px))";
+				panel.style.padding = "8px";
 				panel.style.borderRadius = "12px";
 				panel.style.border = "1px solid rgba(148, 163, 184, 0.35)";
 				panel.style.background = "rgba(15, 23, 42, 0.88)";
@@ -325,6 +325,11 @@ window.TelegramAiBridge = {
 				panel.style.fontFamily = "system-ui, -apple-system, BlinkMacSystemFont, sans-serif";
 				panel.style.fontSize = "13px";
 				panel.style.backdropFilter = "blur(18px)";
+				panel.style.boxSizing = "border-box";
+			};
+			if (!panel) {
+				panel = document.createElement("div");
+				panel.id = "telegram-ai-brief-panel";
 				var header = document.createElement("div");
 				header.style.display = "flex";
 				header.style.alignItems = "center";
@@ -365,6 +370,7 @@ window.TelegramAiBridge = {
 				panel.appendChild(result);
 				document.body.appendChild(panel);
 			}
+			stylePanel(panel);
 			if (command.type !== "showAiBrief") {
 				return;
 			}
@@ -604,6 +610,16 @@ void Section::showOpenAISubscriptionRoute() {
 	_webview->eval(R"JS(
 (function() {
 	var target = "/settings/providers/chat/openai-subscription";
+	var targetHash = "#" + target;
+	var watcherKey = "__telegramOpenAISubscriptionRouteWatcher";
+	var appPath = (function() {
+		try {
+			var base = new URL(document.baseURI);
+			return base.pathname || window.location.pathname;
+		} catch (e) {
+			return window.location.pathname;
+		}
+	})();
 	var attempts = 0;
 	var setStyles = function(element, styles) {
 		Object.keys(styles).forEach(function(key) {
@@ -647,7 +663,16 @@ void Section::showOpenAISubscriptionRoute() {
 		window.localStorage.setItem(key, value);
 		notifyStorage(key, value);
 	};
-	var configureOpenAISubscriptionProvider = function() {
+	var getActiveModel = function() {
+		return window.localStorage.getItem("settings/consciousness/active-model")
+			|| "gpt-4.5-mini";
+	};
+	var setActiveModel = function(modelId) {
+		writeStorageString(
+			"settings/consciousness/active-model",
+			modelId || "gpt-4.5-mini");
+	};
+	var configureOpenAISubscriptionProvider = function(modelId) {
 		var providerId = "openai-subscription";
 		var credentials = readStorageObject("settings/credentials/providers");
 		credentials[providerId] = {
@@ -658,7 +683,7 @@ void Section::showOpenAISubscriptionRoute() {
 		added[providerId] = true;
 		writeStorageObject("settings/providers/added", added);
 		writeStorageString("settings/consciousness/active-provider", providerId);
-		writeStorageString("settings/consciousness/active-model", "gpt-5.4");
+		setActiveModel(modelId || getActiveModel());
 		window.dispatchEvent(new CustomEvent("telegram-ai:openaiSubscriptionConfigured", {
 			detail: { providerId: providerId }
 		}));
@@ -676,10 +701,44 @@ void Section::showOpenAISubscriptionRoute() {
 			writeStorageString("settings/consciousness/active-model", "");
 		}
 	};
-		var ensureOpenAISubscriptionPanel = function() {
-			if (window.location.pathname !== target || !document.body) {
-				return;
+	var currentHashPath = function() {
+		var hash = window.location.hash || "";
+		if (hash.charAt(0) === "#") {
+			hash = hash.slice(1);
+		}
+		var queryIndex = hash.indexOf("?");
+		return queryIndex >= 0 ? hash.slice(0, queryIndex) : hash;
+	};
+	var routeIsTarget = function() {
+		return window.location.pathname === target
+			|| currentHashPath() === target;
+	};
+	var cleanupOpenAISubscriptionPanel = function() {
+		[
+			"telegram-openai-subscription-panel",
+			"telegram-openai-subscription-host"
+		].forEach(function(id) {
+			var element = document.getElementById(id);
+			if (element) {
+				element.remove();
 			}
+		});
+	};
+	var findOpenAISubscriptionTitle = function() {
+		var candidates = document.querySelectorAll("h1, h2, h3, div, span");
+		for (var i = 0; i != candidates.length; ++i) {
+			var element = candidates[i];
+			if ((element.textContent || "").trim() === "OpenAI (Subscription)") {
+				return element;
+			}
+		}
+		return null;
+	};
+	var ensureOpenAISubscriptionPanel = function() {
+		if (!routeIsTarget() || !document.body) {
+			cleanupOpenAISubscriptionPanel();
+			return;
+		}
 			setStyles(document.documentElement, {
 				background: "#0f0f10"
 			});
@@ -687,17 +746,8 @@ void Section::showOpenAISubscriptionRoute() {
 				background: "#0f0f10",
 				color: "rgba(255, 255, 255, 0.94)"
 			});
-			var findOpenAISubscriptionTitle = function() {
-				var candidates = document.querySelectorAll("h1, h2, h3, div, span");
-				for (var i = 0; i != candidates.length; ++i) {
-					var element = candidates[i];
-				if ((element.textContent || "").trim() === "OpenAI (Subscription)") {
-					return element;
-				}
-				}
-				return null;
-			};
 			var ensureHost = function() {
+				var title = findOpenAISubscriptionTitle();
 				var host = document.getElementById("telegram-openai-subscription-host");
 				if (!host) {
 					host = document.createElement("div");
@@ -715,8 +765,19 @@ void Section::showOpenAISubscriptionRoute() {
 					visibility: "visible",
 					opacity: "1"
 				});
-				var title = findOpenAISubscriptionTitle();
-				if (title) {
+				if (!title) {
+					setStyles(host, {
+						padding: "72px 0 32px 0"
+					});
+					var app = document.getElementById("app");
+					var targetHost = document.querySelector("main")
+						|| app
+						|| document.body;
+					if (host.parentElement !== targetHost) {
+						targetHost.appendChild(host);
+					}
+					return host;
+				}
 					var anchor = title;
 					for (var i = 0; i != 6; ++i) {
 						var parent = anchor.parentElement;
@@ -741,27 +802,12 @@ void Section::showOpenAISubscriptionRoute() {
 						targetParent.insertBefore(host, anchor.nextSibling);
 					}
 					return host;
-				}
-				var app = document.getElementById("app");
-				var targetHost = document.querySelector("main")
-					|| app
-					|| document.body;
-				if (targetHost === document.body) {
-					setStyles(host, {
-						padding: "96px 0 32px 0"
-					});
-				} else {
-					setStyles(host, {
-						padding: "72px 0 32px 0"
-					});
-				}
-				if (host.parentElement !== targetHost) {
-					targetHost.appendChild(host);
-				}
-				return host;
 			};
 			var mountPanel = function(panel) {
 				var host = ensureHost();
+				if (!host) {
+					return false;
+				}
 				if (panel.parentElement !== host) {
 					host.appendChild(panel);
 				}
@@ -775,6 +821,7 @@ void Section::showOpenAISubscriptionRoute() {
 					} catch (e) {
 					}
 				}
+				return true;
 			};
 			var applyPanelStyles = function(panel) {
 				setStyles(panel, {
@@ -786,16 +833,16 @@ void Section::showOpenAISubscriptionRoute() {
 					boxSizing: "border-box",
 					display: "flex",
 					flexDirection: "column",
-					gap: "14px",
+					gap: "20px",
 					width: "calc(100% - 48px)",
 					maxWidth: "520px",
-					margin: "24px 24px 0 24px",
-					padding: "18px",
-					borderRadius: "14px",
-					border: "1px solid rgba(148, 163, 184, 0.34)",
-					background: "rgba(17, 24, 39, 0.96)",
+					margin: "18px 16px 0 16px",
+					padding: "18px 16px",
+					borderRadius: "10px",
+					border: "0",
+					background: "#080808",
 				color: "rgba(255, 255, 255, 0.94)",
-				boxShadow: "0 18px 44px rgba(0, 0, 0, 0.24)",
+				boxShadow: "none",
 					fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
 					fontSize: "14px",
 					lineHeight: "1.45",
@@ -812,45 +859,170 @@ void Section::showOpenAISubscriptionRoute() {
 				panel = document.createElement("div");
 			panel.id = "telegram-openai-subscription-panel";
 			panel.setAttribute("data-telegram-openai-subscription-mounted", "1");
-			var title = document.createElement("div");
-			title.textContent = "OpenAI Subscription";
-			setStyles(title, {
-				fontSize: "18px",
-				fontWeight: "700",
-				lineHeight: "1.2"
+			var makeSectionTitle = function(text) {
+				var title = document.createElement("div");
+				title.textContent = text;
+				setStyles(title, {
+					color: "rgba(255, 255, 255, 0.84)",
+					fontSize: "18px",
+					fontWeight: "700",
+					lineHeight: "1.2"
+				});
+				return title;
+			};
+			var makeFieldLabel = function(titleText, helpText) {
+				var label = document.createElement("div");
+				var title = document.createElement("div");
+				title.textContent = titleText;
+				setStyles(title, {
+					color: "rgba(255, 255, 255, 0.92)",
+					fontSize: "13px",
+					fontWeight: "700",
+					lineHeight: "1.2"
+				});
+				var help = document.createElement("div");
+				help.textContent = helpText;
+				setStyles(help, {
+					color: "rgba(226, 232, 240, 0.66)",
+					fontSize: "13px",
+					lineHeight: "1.3",
+					marginTop: "3px"
+				});
+				label.appendChild(title);
+				label.appendChild(help);
+				return label;
+			};
+			var basicTitle = makeSectionTitle("基礎設定");
+			var accountField = document.createElement("div");
+			setStyles(accountField, {
+				display: "flex",
+				flexDirection: "column",
+				gap: "10px"
 			});
-			var description = document.createElement("div");
-			description.textContent = "Connect your ChatGPT subscription account for chat models.";
-			setStyles(description, {
-				color: "rgba(226, 232, 240, 0.82)",
-				marginTop: "-6px"
+			accountField.appendChild(makeFieldLabel(
+				"OpenAI Subscription",
+				"Connect your ChatGPT subscription account for chat models."));
+			var accountRow = document.createElement("div");
+			setStyles(accountRow, {
+				display: "grid",
+				gridTemplateColumns: "1fr auto",
+				gap: "10px",
+				alignItems: "center"
 			});
 			var status = document.createElement("div");
 			status.setAttribute("data-openai-subscription-status", "1");
-			status.textContent = "Checking login status...";
 			setStyles(status, {
-				minHeight: "20px",
-				color: "rgba(226, 232, 240, 0.9)"
+				boxSizing: "border-box",
+				display: "grid",
+				gridTemplateColumns: "20px 1fr auto",
+				gap: "12px",
+				alignItems: "center",
+				minHeight: "64px",
+				padding: "10px 10px",
+				borderRadius: "10px",
+				border: "0",
+				background: "rgba(30, 64, 175, 0.48)",
+				color: "#93c5fd",
+				fontSize: "16px",
+				fontWeight: "700",
+				lineHeight: "1.35"
+			});
+			var statusIcon = document.createElement("div");
+			statusIcon.textContent = "i";
+			setStyles(statusIcon, {
+				width: "18px",
+				height: "18px",
+				borderRadius: "999px",
+				display: "flex",
+				alignItems: "center",
+				justifyContent: "center",
+				background: "rgba(96, 165, 250, 0.56)",
+				color: "#dbeafe",
+				fontSize: "12px",
+				fontWeight: "700"
+			});
+			var statusText = document.createElement("div");
+			statusText.setAttribute("data-openai-subscription-status-text", "1");
+			statusText.textContent = "Checking login status...";
+			var statusActions = document.createElement("div");
+			setStyles(statusActions, {
+				display: "flex",
+				gap: "8px",
+				alignItems: "center"
+			});
+			var accountStatus = document.createElement("div");
+			accountStatus.setAttribute("data-openai-subscription-account", "1");
+			accountStatus.textContent = "Checking login status...";
+			setStyles(accountStatus, {
+				boxSizing: "border-box",
+				minHeight: "34px",
+				border: "1px solid rgba(55, 65, 81, 0.9)",
+				borderRadius: "7px",
+				padding: "7px 10px",
+				background: "#050505",
+				color: "rgba(255, 255, 255, 0.9)",
+				fontWeight: "650",
+				overflow: "hidden",
+				textOverflow: "ellipsis",
+				whiteSpace: "nowrap"
 			});
 			var actions = document.createElement("div");
 			setStyles(actions, {
 				display: "flex",
-				gap: "10px",
-				flexWrap: "wrap"
+				gap: "8px",
+				flexWrap: "nowrap"
 			});
+			var advancedTitle = makeSectionTitle("進階設定 ︿");
+			var controls = document.createElement("div");
+			controls.setAttribute("data-openai-subscription-controls", "1");
+			setStyles(controls, {
+				display: "none",
+				gridTemplateColumns: "1fr",
+				gap: "10px"
+			});
+			var modelBox = document.createElement("label");
+			setStyles(modelBox, {
+				display: "flex",
+				flexDirection: "column",
+				gap: "6px",
+				color: "rgba(255, 255, 255, 0.92)",
+				fontSize: "13px",
+				fontWeight: "700"
+			});
+			var modelLabel = document.createElement("span");
+			modelLabel.textContent = "Model";
+			var modelSelect = document.createElement("select");
+			modelSelect.setAttribute("data-openai-subscription-model", "1");
+			setStyles(modelSelect, {
+				boxSizing: "border-box",
+				width: "100%",
+				minHeight: "32px",
+				border: "1px solid rgba(55, 65, 81, 0.9)",
+				borderRadius: "7px",
+				padding: "0 9px",
+				background: "#050505",
+				color: "white",
+				font: "inherit",
+				fontWeight: "650"
+			});
+			modelBox.appendChild(modelLabel);
+			modelBox.appendChild(modelSelect);
 			var makeButton = function(label, primary) {
 				var button = document.createElement("button");
 				button.type = "button";
 				button.textContent = label;
 				setStyles(button, {
 					border: primary ? "0" : "1px solid rgba(148, 163, 184, 0.36)",
-					borderRadius: "999px",
-					padding: "9px 14px",
+					borderRadius: "6px",
+					padding: "7px 10px",
 					color: "white",
 					background: primary ? "rgba(59, 130, 246, 0.98)" : "rgba(15, 23, 42, 0.62)",
 					cursor: "pointer",
 					font: "inherit",
-					fontWeight: "650"
+					fontSize: "12px",
+					fontWeight: "700",
+					lineHeight: "1.1",
+					whiteSpace: "nowrap"
 				});
 				return button;
 			};
@@ -859,30 +1031,129 @@ void Section::showOpenAISubscriptionRoute() {
 			var useProvider = makeButton("Use for Chat", true);
 			useProvider.setAttribute("data-openai-subscription-use", "1");
 			useProvider.style.display = "none";
+			var ping = makeButton("Ping API", true);
+			ping.setAttribute("data-openai-subscription-ping", "1");
 			var logout = makeButton("Logout", false);
 			logout.setAttribute("data-openai-subscription-logout", "1");
+			controls.appendChild(modelBox);
+			statusActions.appendChild(ping);
+			status.appendChild(statusIcon);
+			status.appendChild(statusText);
+			status.appendChild(statusActions);
 			actions.appendChild(signIn);
 			actions.appendChild(useProvider);
 			actions.appendChild(logout);
-			panel.appendChild(title);
-			panel.appendChild(description);
+			accountRow.appendChild(accountStatus);
+			accountRow.appendChild(actions);
+			accountField.appendChild(accountRow);
+			panel.appendChild(basicTitle);
+			panel.appendChild(accountField);
+			panel.appendChild(advancedTitle);
+			panel.appendChild(controls);
 			panel.appendChild(status);
-			panel.appendChild(actions);
 		}
 		applyPanelStyles(panel);
-		mountPanel(panel);
+		if (!mountPanel(panel)) {
+			return;
+		}
 		var statusNode = panel.querySelector("[data-openai-subscription-status]");
+		var statusTextNode = panel.querySelector("[data-openai-subscription-status-text]");
+		var accountStatusNode = panel.querySelector("[data-openai-subscription-account]");
 		var loginButton = panel.querySelector("[data-openai-subscription-login]");
 		var useButton = panel.querySelector("[data-openai-subscription-use]");
+		var controlsNode = panel.querySelector("[data-openai-subscription-controls]");
+		var modelSelect = panel.querySelector("[data-openai-subscription-model]");
+		var pingButton = panel.querySelector("[data-openai-subscription-ping]");
 		var logoutButton = panel.querySelector("[data-openai-subscription-logout]");
+		var authenticatedState = controlsNode
+			? controlsNode.style.display !== "none"
+			: false;
+		var populateModels = function(models) {
+			if (!modelSelect || modelSelect.dataset.telegramOpenaiModelsReady) {
+				return;
+			}
+			var active = getActiveModel();
+			(models || []).forEach(function(model) {
+				if (!model || !model.id) {
+					return;
+				}
+				var option = document.createElement("option");
+				option.value = model.id;
+				option.textContent = model.name || model.id;
+				modelSelect.appendChild(option);
+			});
+			if (!modelSelect.querySelector("option[value='" + active + "']")) {
+				var current = document.createElement("option");
+				current.value = active;
+				current.textContent = active;
+				modelSelect.insertBefore(current, modelSelect.firstChild);
+			}
+			modelSelect.value = active;
+			modelSelect.dataset.telegramOpenaiModelsReady = "1";
+		};
 		var setStatus = function(text, failed, authenticated) {
 			if (!statusNode) {
 				return;
 			}
-			statusNode.textContent = text;
-			statusNode.style.color = failed ? "#fecaca" : "rgba(226, 232, 240, 0.9)";
+			if (typeof authenticated === "boolean") {
+				authenticatedState = authenticated;
+			} else {
+				authenticated = authenticatedState;
+			}
+			if (statusTextNode) {
+				statusTextNode.textContent = text;
+			} else {
+				statusNode.textContent = text;
+			}
+			setStyles(statusNode, failed ? {
+				border: "0",
+				background: "rgba(127, 29, 29, 0.46)",
+				color: "#fecaca"
+			} : authenticated ? {
+				border: "0",
+				background: "rgba(30, 64, 175, 0.48)",
+				color: "#93c5fd"
+			} : {
+				border: "0",
+				background: "rgba(30, 64, 175, 0.48)",
+				color: "#93c5fd"
+			});
+			if (accountStatusNode) {
+				accountStatusNode.textContent = failed
+					? "Configuration needs attention"
+					: authenticated
+						? "Signed in"
+						: "Not signed in";
+			}
+			if (loginButton) {
+				loginButton.disabled = !!authenticated;
+				loginButton.style.display = authenticated ? "none" : "";
+				loginButton.textContent = authenticated
+					? "Signed in"
+					: "Sign in with OpenAI";
+				setStyles(loginButton, authenticated ? {
+					border: "1px solid rgba(74, 222, 128, 0.38)",
+					background: "rgba(22, 101, 52, 0.42)",
+					color: "#dcfce7",
+					cursor: "default"
+				} : {
+					border: "0",
+					background: "rgba(59, 130, 246, 0.98)",
+					color: "white",
+					cursor: "pointer"
+				});
+			}
 			if (useButton) {
-				useButton.style.display = authenticated ? "" : "none";
+				useButton.style.display = "none";
+			}
+			if (controlsNode) {
+				controlsNode.style.display = authenticated ? "grid" : "none";
+			}
+			if (pingButton) {
+				pingButton.style.display = authenticated ? "" : "none";
+			}
+			if (logoutButton) {
+				logoutButton.style.display = authenticated ? "" : "none";
 			}
 		};
 		var refresh = function() {
@@ -891,52 +1162,125 @@ void Section::showOpenAISubscriptionRoute() {
 				return;
 			}
 			window.TelegramOpenAISubscription.status().then(function(result) {
+				populateModels(result && result.models);
 				if (result && result.authenticated) {
-					configureOpenAISubscriptionProvider();
+					configureOpenAISubscriptionProvider(
+						modelSelect ? modelSelect.value : getActiveModel());
 					setStatus("Signed in. Provider selected for chat.", false, true);
 				} else {
 					setStatus("Not signed in.", false, false);
 				}
 			}, function(error) {
-				setStatus((error && error.message) || "Could not read login status.", true);
+				setStatus(
+					(error && error.message) || "Could not read login status.",
+					true,
+					false);
 			});
 		};
-		if (!panel.dataset.telegramOpenaiSubscriptionBound) {
-			panel.dataset.telegramOpenaiSubscriptionBound = "1";
-			loginButton.addEventListener("click", function() {
+		if (loginButton) {
+			loginButton.onclick = function() {
 				loginButton.disabled = true;
-				setStatus("Opening OpenAI login...");
+				setStatus("Opening OpenAI login...", false, authenticatedState);
 				window.TelegramOpenAISubscription.startLogin().then(function(result) {
 					loginButton.disabled = false;
+					populateModels(result && result.models);
 					if (result && result.authenticated) {
-						configureOpenAISubscriptionProvider();
+						configureOpenAISubscriptionProvider(
+							modelSelect ? modelSelect.value : getActiveModel());
 						setStatus("Signed in. Provider selected for chat.", false, true);
 					} else {
 						setStatus("Not signed in.", false, false);
 					}
 				}, function(error) {
 					loginButton.disabled = false;
-					setStatus((error && error.message) || "OpenAI login failed.", true);
+					setStatus(
+						(error && error.message) || "OpenAI login failed.",
+						true,
+						authenticatedState);
 				});
-			});
-			if (useButton) {
-				useButton.addEventListener("click", function() {
-					configureOpenAISubscriptionProvider();
-					setStatus("Provider selected for chat.", false, true);
+			};
+		}
+		if (useButton) {
+			useButton.onclick = function() {
+				configureOpenAISubscriptionProvider(
+					modelSelect ? modelSelect.value : getActiveModel());
+				setStatus("Provider selected for chat.", false, true);
+			};
+		}
+		if (modelSelect) {
+			modelSelect.onchange = function() {
+				configureOpenAISubscriptionProvider(modelSelect.value);
+				setStatus(
+					"Signed in. Model set to " + modelSelect.value + ".",
+					false,
+					true);
+			};
+		}
+		if (pingButton) {
+			pingButton.onclick = function(event) {
+				if (event) {
+					event.preventDefault();
+					event.stopPropagation();
+				}
+				var model = modelSelect ? modelSelect.value : getActiveModel();
+				var pingLabel = pingButton.textContent;
+				pingButton.disabled = true;
+				pingButton.textContent = "Checking...";
+				setStatus(
+					"Checking OpenAI Subscription with " + model + "...",
+					false,
+					true);
+				window.TelegramOpenAISubscription.proxyFetch({
+					url: "https://api.openai.com/v1/responses",
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json",
+						"Accept": "text/event-stream"
+					},
+					body: JSON.stringify({
+						model: model,
+						input: "Reply with OK.",
+						store: false
+					})
+				}).then(function(result) {
+					pingButton.disabled = false;
+					pingButton.textContent = pingLabel;
+					var response = result && result.response;
+					var status = response && response.status;
+					if (!status || status < 200 || status >= 300) {
+						var body = response && response.body
+							? String(response.body).slice(0, 160)
+							: "";
+						setStatus(
+							"API check failed"
+								+ (status ? " (" + status + ")" : "")
+								+ (body ? ": " + body : "."),
+							true,
+							true);
+						return;
+					}
+					configureOpenAISubscriptionProvider(model);
+					setStatus("API check passed. Model set to " + model + ".", false, true);
+				}, function(error) {
+					pingButton.disabled = false;
+					pingButton.textContent = pingLabel;
+					setStatus((error && error.message) || "API check failed.", true, true);
 				});
-			}
-			logoutButton.addEventListener("click", function() {
+			};
+		}
+		if (logoutButton) {
+			logoutButton.onclick = function() {
 				logoutButton.disabled = true;
-				setStatus("Logging out...");
+				setStatus("Logging out...", false, true);
 				window.TelegramOpenAISubscription.logout().then(function() {
 					logoutButton.disabled = false;
 					clearOpenAISubscriptionProvider();
 					setStatus("Not signed in.", false, false);
 				}, function(error) {
 					logoutButton.disabled = false;
-					setStatus((error && error.message) || "Logout failed.", true);
+					setStatus((error && error.message) || "Logout failed.", true, true);
 				});
-			});
+			};
 		}
 		refresh();
 		};
@@ -948,15 +1292,38 @@ void Section::showOpenAISubscriptionRoute() {
 				}
 				return;
 		}
-		if (window.location.pathname !== target) {
-			window.history.replaceState({}, "", target + window.location.search);
-		}
+		if (window.location.pathname === target) {
+			window.history.replaceState(
+				{},
+				"",
+				appPath + window.location.search + targetHash);
 			notifyRoute();
+		}
 			ensureOpenAISubscriptionPanel();
 			if (attempts < 80) {
 				window.setTimeout(syncRoute, 100);
 			}
 		};
+	if (!window[watcherKey]) {
+		window[watcherKey] = {};
+		window.addEventListener("hashchange", function() {
+			window.setTimeout(syncRoute, 0);
+		});
+		window.addEventListener("popstate", function() {
+			window.setTimeout(syncRoute, 0);
+		});
+		if (window.MutationObserver) {
+			window[watcherKey].observer = new MutationObserver(function() {
+				if (routeIsTarget()) {
+					window.setTimeout(syncRoute, 0);
+				}
+			});
+			window[watcherKey].observer.observe(document.documentElement, {
+				childList: true,
+				subtree: true
+			});
+		}
+	}
 	syncRoute();
 })();
 )JS");

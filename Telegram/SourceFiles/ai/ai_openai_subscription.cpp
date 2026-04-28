@@ -37,6 +37,8 @@ struct Model {
 };
 
 constexpr Model kModels[] = {
+	{ "gpt-4.5-mini", "GPT-4.5 Mini" },
+	{ "gpt-4.5", "GPT-4.5" },
 	{ "gpt-5.1-codex", "GPT-5.1 Codex" },
 	{ "gpt-5.1-codex-max", "GPT-5.1 Codex Max" },
 	{ "gpt-5.1-codex-mini", "GPT-5.1 Codex Mini" },
@@ -349,6 +351,63 @@ namespace {
 	return choice;
 }
 
+[[nodiscard]] QJsonValue SanitizeOpenAIToolSchema(
+		const QJsonValue &value,
+		bool propertiesMap = false) {
+	if (value.isArray()) {
+		auto result = QJsonArray();
+		for (const auto item : value.toArray()) {
+			result.push_back(SanitizeOpenAIToolSchema(item));
+		}
+		return result;
+	}
+	if (!value.isObject()) {
+		return value;
+	}
+	auto result = QJsonObject();
+	const auto object = value.toObject();
+	if (propertiesMap) {
+		for (auto i = object.begin(); i != object.end(); ++i) {
+			const auto sanitized = SanitizeOpenAIToolSchema(i.value());
+			if (!sanitized.isUndefined()) {
+				result.insert(i.key(), sanitized);
+			}
+		}
+		return result;
+	}
+	const auto hadDynamicObjectKeywords = object.contains("propertyNames")
+		|| (object.contains("additionalProperties")
+			&& object.value("additionalProperties") != false);
+	const auto hadProperties = object.contains("properties");
+	for (auto i = object.begin(); i != object.end(); ++i) {
+		if (i.key() == u"propertyNames"_q
+			|| i.key() == u"required"_q
+			|| i.key() == u"additionalProperties"_q) {
+			continue;
+		}
+		result.insert(
+			i.key(),
+			SanitizeOpenAIToolSchema(
+				i.value(),
+				i.key() == u"properties"_q));
+	}
+	const auto properties = result.value("properties").toObject();
+	if (properties.isEmpty() && !hadProperties && hadDynamicObjectKeywords) {
+		return QJsonValue(QJsonValue::Undefined);
+	}
+	if (!properties.isEmpty()) {
+		auto required = QJsonArray();
+		for (auto i = properties.begin(); i != properties.end(); ++i) {
+			required.push_back(i.key());
+		}
+		result.insert("required", required);
+		result.insert("additionalProperties", false);
+	} else if (result.value("type").toString() == u"object"_q) {
+		result.insert("additionalProperties", false);
+	}
+	return result;
+}
+
 [[nodiscard]] QJsonValue NormalizeCodexTools(const QJsonValue &tools) {
 	if (!tools.isArray()) {
 		return tools;
@@ -358,7 +417,7 @@ namespace {
 		const auto object = tool.toObject();
 		const auto directName = object.value("name").toString();
 		if (!directName.isEmpty()) {
-			result.push_back(object);
+			result.push_back(SanitizeOpenAIToolSchema(object));
 			continue;
 		}
 		const auto function = object.value("function").toObject();
@@ -368,7 +427,8 @@ namespace {
 				{ "type", "function" },
 				{ "name", name },
 				{ "description", function.value("description") },
-				{ "parameters", function.value("parameters") },
+				{ "parameters", SanitizeOpenAIToolSchema(
+					function.value("parameters")) },
 				{ "strict", function.value("strict") },
 			});
 		}
