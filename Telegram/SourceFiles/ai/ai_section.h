@@ -58,7 +58,6 @@ private:
 	void loadAvatar();
 	void loadBriefAction();
 	void showCapabilities();
-	void showOpenAISubscriptionRoute();
 	void showBrief(const QString &task);
 	void previewSpeech(const QString &text);
 
