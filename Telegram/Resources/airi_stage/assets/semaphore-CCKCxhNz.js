@@ -1,2 +1,0 @@
-var e=class{capacity;available;deferredTasks=[];constructor(e){this.capacity=e,this.available=e}async acquire(){if(this.available>0){this.available--;return}return new Promise(e=>{this.deferredTasks.push(e)})}release(){let e=this.deferredTasks.shift();if(e!=null){e();return}this.available<this.capacity&&this.available++}};export{e as t};
-//# sourceMappingURL=semaphore-CCKCxhNz.js.map

@@ -1,1 +1,0 @@
-{"version":3,"file":"__vite-optional-peer-dep_effect_xsschema-Boq3WvK7.js","names":[],"sources":["../../__vite-optional-peer-dep:effect:xsschema"],"sourcesContent":["export default {};\nthrow new Error(`Could not resolve \"effect\" imported by \"xsschema\". Is it installed?`)"],"mappings":"AAAA,IAAA,EAAe,EAAE,CACjB,MAAU,MAAM,sEAAA"}

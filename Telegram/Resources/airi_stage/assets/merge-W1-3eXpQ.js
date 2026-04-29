@@ -1,2 +1,0 @@
-var e=e=>e!=null&&Object.getPrototypeOf(e)===Object.prototype,t=(n,r)=>{let i={...n};if(!r)return i;for(let[n,a]of Object.entries(r))if(a!==void 0){if(e(i[n])&&e(a)){i[n]=t(i[n],a);continue}i[n]=a}return i};export{t};
-//# sourceMappingURL=merge-W1-3eXpQ.js.map

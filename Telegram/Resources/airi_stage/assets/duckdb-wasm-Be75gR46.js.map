@@ -1,1 +1,0 @@
-{"version":3,"file":"duckdb-wasm-Be75gR46.js","names":[],"sources":["../../__vite-optional-peer-dep:web-worker:@proj-airi/duckdb-wasm"],"sourcesContent":["export default {};\nthrow new Error(`Could not resolve \"web-worker\" imported by \"@proj-airi/duckdb-wasm\". Is it installed?`)"],"mappings":"AAAA,IAAA,EAAe,EAAE,CACjB,MAAU,MAAM,wFAAA"}

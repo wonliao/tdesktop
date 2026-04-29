@@ -1,2 +1,0 @@
-var e=`https://xsai.js.org/docs/packages-top/xsschema#missing-dependencies`,t=async(t,n)=>{try{return await t}catch{throw Error(`xsschema: Missing dependencies "${n}". see ${e}`)}},n=async(e,t)=>{let n=e[`~standard`].validate(t);if(n instanceof Promise&&(n=await n),n.issues)throw Error(JSON.stringify(n.issues,null,2));return n.value};export{t as n,n as r,e as t};
-//# sourceMappingURL=index-C3AUokeC-CG0F8um6.js.map

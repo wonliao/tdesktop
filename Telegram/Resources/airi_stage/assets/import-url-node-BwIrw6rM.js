@@ -1,2 +1,0 @@
-import{n as e,t}from"./duckdb-mvp-DwCL4197.js";var n=``+new URL(`duckdb-node-eh.worker-JckteRwc.cjs`,import.meta.url).href,r=``+new URL(`duckdb-node-mvp.worker-GMEh9yNX.cjs`,import.meta.url).href;function i(e){return e.startsWith(`/@fs/`)?e.replace(`/@fs/`,`file://`):e}async function a(){return{mvp:{mainModule:i(t),mainWorker:i(r)},eh:{mainModule:i(e),mainWorker:i(n)}}}export{a as getImportUrlBundles};
-//# sourceMappingURL=import-url-node-BwIrw6rM.js.map

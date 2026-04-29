@@ -1,2 +1,0 @@
-import{A as e,S as t,jt as n,q as r}from"./vue.runtime.esm-bundler-DT6ez1Hp.js";import{n as i}from"./vue-router-C1wv5f1R.js";var a=e({__name:`settings`,setup(e){return(e,a)=>(r(),t(n(i)))}});export{a as default};
-//# sourceMappingURL=settings-DviMe8Li.js.map

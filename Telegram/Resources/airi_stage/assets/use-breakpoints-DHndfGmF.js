@@ -1,2 +1,0 @@
-import{b as e}from"./vue.runtime.esm-bundler-DT6ez1Hp.js";import{p as t}from"./dist-B9WcaE9T.js";function n(){let n=t(`(min-width: 768px)`);return{isDesktop:n,isMobile:e(()=>!n.value)}}export{n as t};
-//# sourceMappingURL=use-breakpoints-DHndfGmF.js.map

@@ -49,7 +49,6 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "chat_helpers/bot_command.h"
 #include "chat_helpers/tabbed_selector.h" // TabbedSelector::refreshStickers
 #include "chat_helpers/message_field.h"
-#include "ai/ai_tabbed_memento.h"
 #include "info/info_memento.h"
 #include "apiwrap.h"
 #include "dialogs/dialogs_widget.h"
@@ -2400,7 +2399,7 @@ void MainWidget::updateControlsGeometry() {
 					}
 				} else if (Core::App().settings().thirdSectionInfoEnabled()) {
 					_controller->showSection(
-						Ai::MakeTabbedMemento(active),
+						thirdSectionForCurrentMainSection(active),
 						params.withThirdColumn());
 				}
 			}
@@ -2661,23 +2660,19 @@ auto MainWidget::thirdSectionForCurrentMainSection(
 	if (_thirdSectionFromStack) {
 		return std::move(_thirdSectionFromStack);
 	} else if (const auto topic = key.topic()) {
-		return Ai::MakeTabbedMemento(
-			std::make_shared<Info::Memento>(topic));
+		return std::make_shared<Info::Memento>(topic);
 	} else if (const auto sublist = key.sublist()
 		; sublist && sublist->parentChat()) {
-		return Ai::MakeTabbedMemento(
-			std::make_shared<Info::Memento>(sublist));
+		return std::make_shared<Info::Memento>(sublist);
 	} else if (const auto peer = key.peer()) {
-		return Ai::MakeTabbedMemento(
-			std::make_shared<Info::Memento>(
-				peer,
-				Info::Memento::DefaultSection(peer)));
+		return std::make_shared<Info::Memento>(
+			peer,
+			Info::Memento::DefaultSection(peer));
 	} else if (const auto sublist = key.sublist()) {
 		const auto peer = sublist->owningHistory()->peer;
-		return Ai::MakeTabbedMemento(
-			std::make_shared<Info::Memento>(
-				peer,
-				Info::Memento::DefaultSection(peer)));
+		return std::make_shared<Info::Memento>(
+			peer,
+			Info::Memento::DefaultSection(peer));
 	}
 	Unexpected("Key in MainWidget::thirdSectionForCurrentMainSection().");
 }

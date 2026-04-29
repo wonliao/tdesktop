@@ -29,7 +29,7 @@ constexpr auto kCodexEndpoint = "https://chatgpt.com/backend-api/codex/responses
 constexpr auto kOAuthPort = quint16(1455);
 constexpr auto kCallbackPath = "/auth/callback";
 constexpr auto kRefreshSkew = qint64(60 * 1000);
-constexpr auto kFallbackInstructions = "You are AIRI, a helpful AI assistant.";
+constexpr auto kFallbackInstructions = "You are a helpful AI assistant.";
 
 struct Model {
 	const char *id;

@@ -7,7 +7,6 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "history/history_widget.h"
 
-#include "ai/ai_tabbed_memento.h"
 #include "api/api_editing.h"
 #include "api/api_bot.h"
 #include "api/api_chat_participants.h"
@@ -1323,10 +1322,7 @@ void HistoryWidget::initAiButton() {
 			_aiTooltipManager->hideAndRemember();
 		}
 		updateAiButtonVisibility();
-		controller()->resizeForThirdSection();
-		controller()->showSection(
-			Ai::MakeTabbedMemento(controller()->activeChatCurrent(), true),
-			Window::SectionShow().withThirdColumn());
+		showAiComposeBox();
 	});
 
 	_aiTooltipManager = std::make_unique<HistoryView::Controls::AiTooltipManager>(

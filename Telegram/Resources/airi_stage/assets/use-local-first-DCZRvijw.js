@@ -1,2 +1,0 @@
-import{St as e}from"./vue.runtime.esm-bundler-DT6ez1Hp.js";import{r as t}from"./pinia-D-gyamZc.js";import{s as n}from"./auth-jegOc3yt.js";async function r(e){return e?await e():t()?n().isAuthenticated:!0}function i(t){let{local:n,remote:i,allowRemote:a,lazy:o=!1}=t,s=e(),c=e(!1),l=e(null),u=async()=>{c.value=!0,l.value=null;try{if(s.value=await n(),await r(a))try{s.value=await i()}catch(e){l.value=e}}catch(e){l.value=e}finally{c.value=!1}};return o||u(),{state:s,isLoading:c,error:l,execute:u}}export{i as t};
-//# sourceMappingURL=use-local-first-DCZRvijw.js.map

@@ -1,2 +1,0 @@
-import{A as e,S as t,q as n}from"./vue.runtime.esm-bundler-DT6ez1Hp.js";import{t as r}from"./route-block-Dcr47f_S.js";import{t as i}from"./ConnectionSettings-CD1qwKsY.js";var a=e({__name:`index`,setup(e){return(e,r)=>(n(),t(i))}});typeof r==`function`&&r(a);var o=a;export{o as default};
-//# sourceMappingURL=connection-CSy-3CrJ.js.map

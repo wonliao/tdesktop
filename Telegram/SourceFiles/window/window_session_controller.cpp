@@ -21,7 +21,6 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "window/window_controller.h"
 #include "window/window_filters_menu.h"
 #include "window/window_separate_id.h"
-#include "ai/ai_tabbed_memento.h"
 #include "info/channel_statistics/earn/info_channel_earn_list.h"
 #include "info/peer_gifts/info_peer_gifts_widget.h"
 #include "info/stories/info_stories_widget.h"
@@ -1389,11 +1388,7 @@ void SessionNavigation::showPeerInfo(
 	//	Core::App().saveSettingsDelayed();
 	//}
 	auto memento = std::make_shared<Info::Memento>(peer);
-	showSection(
-		params.thirdColumn
-			? Ai::MakeTabbedMemento(std::move(memento))
-			: std::move(memento),
-		params);
+	showSection(std::move(memento), params);
 }
 
 void SessionNavigation::showPeerInfo(
@@ -1401,11 +1396,7 @@ void SessionNavigation::showPeerInfo(
 	const SectionShow &params) {
 	if (const auto topic = thread->asTopic()) {
 		auto memento = std::make_shared<Info::Memento>(topic);
-		showSection(
-			params.thirdColumn
-				? Ai::MakeTabbedMemento(std::move(memento))
-				: std::move(memento),
-			params);
+		showSection(std::move(memento), params);
 	} else if (const auto sublist = thread->asSublist()
 		; sublist && sublist->parentChat()) {
 		showPeerInfo(sublist->sublistPeer()->id, params);

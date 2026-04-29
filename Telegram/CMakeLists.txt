@@ -386,18 +386,8 @@ PRIVATE
     boxes/transfer_gift_box.h
     boxes/compose_ai_box.cpp
     boxes/compose_ai_box.h
-    ai/ai_memento.cpp
-    ai/ai_memento.h
     ai/ai_openai_subscription.cpp
     ai/ai_openai_subscription.h
-    ai/ai_provider.cpp
-    ai/ai_provider.h
-    ai/ai_section.cpp
-    ai/ai_section.h
-    ai/ai_tabbed_memento.cpp
-    ai/ai_tabbed_memento.h
-    ai/ai_tabbed_section.cpp
-    ai/ai_tabbed_section.h
     boxes/translate_box.cpp
     boxes/translate_box.h
     boxes/url_auth_box.cpp
@@ -1955,7 +1945,6 @@ PRIVATE
     qrc/emoji_8.qrc
     qrc/emoji_preview.qrc
     qrc/telegram/animations.qrc
-    qrc/telegram/airi_stage.qrc
     qrc/telegram/avatar_stage.qrc
     qrc/telegram/export.qrc
     qrc/telegram/iv.qrc
@@ -2057,6 +2046,7 @@ elseif (APPLE)
     add_custom_command(TARGET Telegram
     PRE_LINK
         COMMAND mkdir -p $<TARGET_FILE_DIR:Telegram>/../Resources
+        COMMAND cp ${CMAKE_BINARY_DIR}/Telegram.rcc $<TARGET_FILE_DIR:Telegram>/../Resources
         COMMAND cp ${CMAKE_BINARY_DIR}/lib_ui.rcc $<TARGET_FILE_DIR:Telegram>/../Resources
         COMMAND cp ${CMAKE_BINARY_DIR}/lib_spellcheck.rcc $<TARGET_FILE_DIR:Telegram>/../Resources
     )
